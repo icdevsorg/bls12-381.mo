@@ -1,0 +1,6 @@
+BLS12-381.mo
+Copyright 2026 ICDevs.org
+
+This product includes algorithmic constants and implementation guidance derived
+from @noble/curves, Copyright (c) 2022 Paul Miller, used under the MIT License.
+See THIRD_PARTY_LICENSES.md.

@@ -1,0 +1,42 @@
+service : {
+  debug_iso3_fp2: (c0: vec nat8, c1: vec nat8) -> (vec nat8, vec nat8,
+   vec nat8, vec nat8) query;
+  debug_swu_fp2: (c0: vec nat8, c1: vec nat8) -> (vec nat8, vec nat8,
+   vec nat8, vec nat8) query;
+  decode_fp: (val: vec nat8) -> (opt vec nat8) query;
+  encode_fp: (val: vec nat8) -> (vec nat8) query;
+  fp2_add: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  fp2_inv: (a: vec nat8) -> (vec nat8) query;
+  fp2_mul: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  fp2_neg: (a: vec nat8) -> (vec nat8) query;
+  fp2_sq: (a: vec nat8) -> (vec nat8) query;
+  fp2_sub: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  fp_add: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  fp_inv: (a: vec nat8) -> (vec nat8) query;
+  fp_mul: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  fp_neg: (a: vec nat8) -> (vec nat8) query;
+  fp_pow: (base: vec nat8, exp: vec nat8) -> (vec nat8) query;
+  fp_sqrt: (a: vec nat8) -> (opt vec nat8) query;
+  fp_sub: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  g1_add: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  g1_is_on_curve: (point: vec nat8) -> (bool) query;
+  g1_msm: (points_bytes: vec nat8, scalars_bytes: vec nat8) ->
+   (vec nat8) query;
+  g1_mul: (point: vec nat8, scalar: vec nat8) -> (vec nat8) query;
+  g1_neg: (point: vec nat8) -> (vec nat8) query;
+  g1_subgroup_check: (point: vec nat8) -> (bool) query;
+  g2_add: (a: vec nat8, b: vec nat8) -> (vec nat8) query;
+  g2_is_on_curve: (point: vec nat8) -> (bool) query;
+  g2_msm: (points_bytes: vec nat8, scalars_bytes: vec nat8) ->
+   (vec nat8) query;
+  g2_mul: (point: vec nat8, scalar: vec nat8) -> (vec nat8) query;
+  g2_subgroup_check: (point: vec nat8) -> (bool) query;
+  get_p: () -> (vec nat8) query;
+  get_r: () -> (vec nat8) query;
+  iso11_map: (xp: vec nat8, yp: vec nat8) -> (vec nat8) query;
+  map_fp2_to_g2: (fp2_input: vec nat8) -> (vec nat8) query;
+  map_fp_to_g1: (fp_input: vec nat8) -> (vec nat8) query;
+  pairing: (g1_input: vec nat8, g2_input: vec nat8) -> (vec nat8) query;
+  pairing_check: (input: vec nat8) -> (bool) query;
+  swu_fp: (u: vec nat8) -> (vec nat8) query;
+}

@@ -1,0 +1,20 @@
+{
+  "name": "bls12-381-mo-tests",
+  "version": "1.0.0",
+  "description": "PIC.js integration tests for the BLS12-381.mo library",
+  "scripts": {
+    "test": "jest --forceExit --detectOpenHandles",
+    "generate:did": "didc bind test/canister/main.did --target ts > test/pic/declarations/bls_test.did.ts"
+  },
+  "devDependencies": {
+    "@dfinity/pic": "^0.18.0",
+    "@dfinity/agent": "^2.3.1",
+    "@dfinity/candid": "^2.3.1",
+    "@dfinity/principal": "^2.3.1",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.0",
+    "@noble/curves": "^1.9.7"
+  }
+}

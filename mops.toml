@@ -1,0 +1,18 @@
+[package]
+name = "bls12-381"
+version = "0.1.0"
+description = "BLS12-381 elliptic curve operations for Motoko (EIP-2537 compatible)"
+repository = "https://github.com/icdevsorg/bls12-381.mo"
+keywords = [ "bls12-381", "elliptic-curve", "cryptography", "eip-2537", "pairing" ]
+license = "Apache-2.0"
+
+[dependencies]
+base = "0.16.0"
+core = "2.3.1"
+
+[dev-dependencies]
+test = "2.1.2"
+bench = "2.0.1"
+
+[toolchain]
+moc = "1.8.2"

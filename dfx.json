@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "bls_test": {
+      "main": "test/canister/main.mo",
+      "type": "motoko",
+      "gzip": true
+    },
+    "fp_test": {
+      "main": "__temp/fp_test.mo",
+      "type": "motoko"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": "mops sources"
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1,
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8889"
+    }
+  }
+}
