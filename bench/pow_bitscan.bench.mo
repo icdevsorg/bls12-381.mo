@@ -1,5 +1,5 @@
 import Bench "mo:bench";
-import Nat64 "mo:base/Nat64";
+import Nat64 "mo:core/Nat64";
 import CoreNat "mo:core/Nat";
 
 module {

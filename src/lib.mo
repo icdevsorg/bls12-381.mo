@@ -3,14 +3,13 @@
 // Constants and algorithm structure were checked against @noble/curves 1.9.7.
 // See THIRD_PARTY_LICENSES.md for its MIT attribution.
 
-import Int "mo:base/Int";
-import Iter "mo:base/Iter";
-import Array "mo:base/Array";
-import Buffer "mo:base/Buffer";
-import Nat8 "mo:base/Nat8";
-import Nat "mo:base/Nat";
-import Nat64 "mo:base/Nat64";
-import CoreNat "mo:core/Nat";
+import Array "mo:core/Array";
+import Int "mo:core/Int";
+import Nat "mo:core/Nat";
+import Nat8 "mo:core/Nat8";
+import Nat64 "mo:core/Nat64";
+import PureList "mo:core/pure/List";
+import VarArray "mo:core/VarArray";
 
 module {
 
@@ -108,11 +107,11 @@ module {
     var b = fp_mod(base_);
     // Use Nat64 6-limb bit scanning for 384-bit exponents (86x faster scanning)
     var s0 = Nat64.fromNat(exp_ % POW64);
-    var s1 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 64) % POW64);
-    var s2 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 128) % POW64);
-    var s3 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 192) % POW64);
-    var s4 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 256) % POW64);
-    var s5 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 320) % POW64);
+    var s1 = Nat64.fromNat(Nat.bitshiftRight(exp_, 64) % POW64);
+    var s2 = Nat64.fromNat(Nat.bitshiftRight(exp_, 128) % POW64);
+    var s3 = Nat64.fromNat(Nat.bitshiftRight(exp_, 192) % POW64);
+    var s4 = Nat64.fromNat(Nat.bitshiftRight(exp_, 256) % POW64);
+    var s5 = Nat64.fromNat(Nat.bitshiftRight(exp_, 320) % POW64);
     while (s0 != 0 or s1 != 0 or s2 != 0 or s3 != 0 or s4 != 0 or s5 != 0) {
       if ((s0 & 1) == 1) {
         result := fp_mul(result, b);
@@ -183,11 +182,11 @@ module {
     var b = base_;
     // Use Nat64 6-limb bit scanning for 384-bit exponents
     var s0 = Nat64.fromNat(exp_ % POW64);
-    var s1 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 64) % POW64);
-    var s2 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 128) % POW64);
-    var s3 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 192) % POW64);
-    var s4 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 256) % POW64);
-    var s5 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 320) % POW64);
+    var s1 = Nat64.fromNat(Nat.bitshiftRight(exp_, 64) % POW64);
+    var s2 = Nat64.fromNat(Nat.bitshiftRight(exp_, 128) % POW64);
+    var s3 = Nat64.fromNat(Nat.bitshiftRight(exp_, 192) % POW64);
+    var s4 = Nat64.fromNat(Nat.bitshiftRight(exp_, 256) % POW64);
+    var s5 = Nat64.fromNat(Nat.bitshiftRight(exp_, 320) % POW64);
     while (s0 != 0 or s1 != 0 or s2 != 0 or s3 != 0 or s4 != 0 or s5 != 0) {
       if ((s0 & 1) == 1) { result := fp2_mul(result, b) };
       b := fp2_sq(b);
@@ -612,11 +611,11 @@ module {
     var b = base_;
     // Use Nat64 6-limb bit scanning for 384-bit exponents
     var s0 = Nat64.fromNat(exp_ % POW64);
-    var s1 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 64) % POW64);
-    var s2 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 128) % POW64);
-    var s3 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 192) % POW64);
-    var s4 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 256) % POW64);
-    var s5 = Nat64.fromNat(CoreNat.bitshiftRight(exp_, 320) % POW64);
+    var s1 = Nat64.fromNat(Nat.bitshiftRight(exp_, 64) % POW64);
+    var s2 = Nat64.fromNat(Nat.bitshiftRight(exp_, 128) % POW64);
+    var s3 = Nat64.fromNat(Nat.bitshiftRight(exp_, 192) % POW64);
+    var s4 = Nat64.fromNat(Nat.bitshiftRight(exp_, 256) % POW64);
+    var s5 = Nat64.fromNat(Nat.bitshiftRight(exp_, 320) % POW64);
     while (s0 != 0 or s1 != 0 or s2 != 0 or s3 != 0 or s4 != 0 or s5 != 0) {
       if ((s0 & 1) == 1) { result := fp12_mul(result, b) };
       b := fp12_sq(b);
@@ -730,23 +729,22 @@ module {
   // ══════════════════════════════════════════════════════════════
 
   func _naf_decomposition(a : Nat) : [Int] {
-    let buf = Buffer.Buffer<Int>(64);
+    var digits = PureList.empty<Int>();
     var n = a;
     // n > 1 because of marker bit (leading 1 is implicit)
     while (n > 1) {
       if (n % 2 == 0) {
-        buf.add(0);
+        digits := PureList.pushFront(digits, 0);
       } else if (n % 4 == 3) {
-        buf.add(-1);
+        digits := PureList.pushFront(digits, -1);
         n += 1;
       } else {
-        buf.add(1);
+        digits := PureList.pushFront(digits, 1);
       };
       n := n / 2;
     };
-    // buf is LSB first, reverse to MSB first
-    let arr = Buffer.toArray(buf);
-    Array.tabulate<Int>(arr.size(), func(i_ : Nat) : Int { arr[arr.size() - 1 - i_] });
+    // Prepending each LSB-first digit produces the required MSB-first order.
+    PureList.toArray(digits);
   };
 
   // ══════════════════════════════════════════════════════════════
@@ -766,7 +764,7 @@ module {
     var f = FP12_ONE;
     let naf = BLS_X_NAF;
 
-    for (idx in Iter.range(0, naf.size() - 1)) {
+    for (idx in Nat.rangeInclusive(0, naf.size() - 1)) {
       f := fp12_sq(f);
       let (nrx, nry, nrz, c0d, c1d, c2d) = doubling_step(rx, ry, rz);
       rx := nrx; ry := nry; rz := nrz;
@@ -791,31 +789,32 @@ module {
   /// Pairs where either component is at infinity are silently skipped.
   public func multi_miller_loop(pairs : [(G1Point, G2Point)]) : Fp12 {
     // Pre-process pairs: convert to affine and filter out infinities
-    let buf = Buffer.Buffer<(Nat, Nat, Fp2, Fp2, Fp2, Fp2, Fp2, Fp2)>(pairs.size());
+    var prepared = PureList.empty<(Nat, Nat, Fp2, Fp2, Fp2, Fp2, Fp2, Fp2)>();
     for ((p, q) in pairs.vals()) {
       if (not g1_is_inf(p) and not g2_is_inf(q)) {
         let p_aff = g1_to_affine(p);
         let q_aff = g2_to_affine(q);
-        buf.add((p_aff.0, p_aff.1, q_aff.0, q_aff.1, fp2_neg(q_aff.1), q_aff.0, q_aff.1, FP2_ONE));
+        prepared := PureList.pushFront(prepared, (p_aff.0, p_aff.1, q_aff.0, q_aff.1, fp2_neg(q_aff.1), q_aff.0, q_aff.1, FP2_ONE));
       };
     };
-    let n = buf.size();
+    let entries = PureList.toArray(prepared);
+    let n = entries.size();
     if (n == 0) return FP12_ONE;
 
     // Mutable arrays for R-point tracking per pair
-    let pxArr = Array.tabulate<Nat>(n, func(i : Nat) : Nat { buf.get(i).0 });
-    let pyArr = Array.tabulate<Nat>(n, func(i : Nat) : Nat { buf.get(i).1 });
-    let qxArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).2 });
-    let qyArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).3 });
-    let negQyArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).4 });
-    let rxArr = Array.tabulateVar<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).5 });
-    let ryArr = Array.tabulateVar<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).6 });
-    let rzArr = Array.tabulateVar<Fp2>(n, func(i : Nat) : Fp2 { buf.get(i).7 });
+    let pxArr = Array.tabulate<Nat>(n, func(i : Nat) : Nat { entries[i].0 });
+    let pyArr = Array.tabulate<Nat>(n, func(i : Nat) : Nat { entries[i].1 });
+    let qxArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].2 });
+    let qyArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].3 });
+    let negQyArr = Array.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].4 });
+    let rxArr = VarArray.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].5 });
+    let ryArr = VarArray.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].6 });
+    let rzArr = VarArray.tabulate<Fp2>(n, func(i : Nat) : Fp2 { entries[i].7 });
 
     var f = FP12_ONE;
     let naf = BLS_X_NAF;
 
-    for (idx in Iter.range(0, naf.size() - 1)) {
+    for (idx in Nat.rangeInclusive(0, naf.size() - 1)) {
       f := fp12_sq(f);  // shared across all pairs
 
       // Doubling step for each pair
@@ -998,7 +997,7 @@ module {
     // Naive fallback for small k (Pippenger overhead not worth it)
     if (k <= 8) {
       var result = G1_INF;
-      for (i in Iter.range(0, k - 1)) {
+      for (i in Nat.rangeInclusive(0, k - 1)) {
         result := g1_add(result, g1_mul(points[i], scalars[i]));
       };
       return result;
@@ -1013,15 +1012,15 @@ module {
 
     // Compute 2^c
     var windowSize : Nat = 1;
-    for (_ in Iter.range(0, c - 1)) { windowSize *= 2; };
+    for (_ in Nat.rangeInclusive(0, c - 1)) { windowSize *= 2; };
     let numBuckets : Nat = windowSize - 1;
     let numWindows : Nat = (256 + c - 1) / c;
 
     // Pre-decompose scalars into c-bit windows
     let scalarWindows = Array.tabulate<[var Nat]>(k, func(idx : Nat) : [var Nat] {
-      let w = Array.init<Nat>(numWindows, 0);
+      let w = VarArray.repeat<Nat>(0, numWindows);
       var s = scalars[idx];
-      for (j in Iter.range(0, numWindows - 1)) {
+      for (j in Nat.rangeInclusive(0, numWindows - 1)) {
         w[j] := s % windowSize;
         s := s / windowSize;
       };
@@ -1029,17 +1028,17 @@ module {
     });
 
     // Allocate buckets (reused across windows)
-    let buckets = Array.init<G1Point>(numBuckets, G1_INF);
-    let windowResults = Array.init<G1Point>(numWindows, G1_INF);
+    let buckets = VarArray.repeat<G1Point>(G1_INF, numBuckets);
+    let windowResults = VarArray.repeat<G1Point>(G1_INF, numWindows);
 
-    for (j in Iter.range(0, numWindows - 1)) {
+    for (j in Nat.rangeInclusive(0, numWindows - 1)) {
       // Reset buckets
-      for (b in Iter.range(0, numBuckets - 1)) {
+      for (b in Nat.rangeInclusive(0, numBuckets - 1)) {
         buckets[b] := G1_INF;
       };
 
       // Bucket accumulation: add P_i to bucket[window_value - 1]
-      for (i in Iter.range(0, k - 1)) {
+      for (i in Nat.rangeInclusive(0, k - 1)) {
         let wv = scalarWindows[i][j];
         if (wv > 0) {
           buckets[wv - 1] := g1_add(buckets[wv - 1], points[i]);
@@ -1065,7 +1064,7 @@ module {
     var w = numWindows - 1;
     while (w > 0) {
       w -= 1;
-      for (_ in Iter.range(0, c - 1)) {
+      for (_ in Nat.rangeInclusive(0, c - 1)) {
         total := g1_double(total);
       };
       total := g1_add(total, windowResults[w]);
@@ -1081,7 +1080,7 @@ module {
 
     if (k <= 8) {
       var result = G2_INF;
-      for (i in Iter.range(0, k - 1)) {
+      for (i in Nat.rangeInclusive(0, k - 1)) {
         result := g2_add(result, g2_mul(points[i], scalars[i]));
       };
       return result;
@@ -1093,29 +1092,29 @@ module {
     c -= 1;
 
     var windowSize : Nat = 1;
-    for (_ in Iter.range(0, c - 1)) { windowSize *= 2; };
+    for (_ in Nat.rangeInclusive(0, c - 1)) { windowSize *= 2; };
     let numBuckets : Nat = windowSize - 1;
     let numWindows : Nat = (256 + c - 1) / c;
 
     let scalarWindows = Array.tabulate<[var Nat]>(k, func(idx : Nat) : [var Nat] {
-      let w = Array.init<Nat>(numWindows, 0);
+      let w = VarArray.repeat<Nat>(0, numWindows);
       var s = scalars[idx];
-      for (j in Iter.range(0, numWindows - 1)) {
+      for (j in Nat.rangeInclusive(0, numWindows - 1)) {
         w[j] := s % windowSize;
         s := s / windowSize;
       };
       w;
     });
 
-    let buckets = Array.init<G2Point>(numBuckets, G2_INF);
-    let windowResults = Array.init<G2Point>(numWindows, G2_INF);
+    let buckets = VarArray.repeat<G2Point>(G2_INF, numBuckets);
+    let windowResults = VarArray.repeat<G2Point>(G2_INF, numWindows);
 
-    for (j in Iter.range(0, numWindows - 1)) {
-      for (b in Iter.range(0, numBuckets - 1)) {
+    for (j in Nat.rangeInclusive(0, numWindows - 1)) {
+      for (b in Nat.rangeInclusive(0, numBuckets - 1)) {
         buckets[b] := G2_INF;
       };
 
-      for (i in Iter.range(0, k - 1)) {
+      for (i in Nat.rangeInclusive(0, k - 1)) {
         let wv = scalarWindows[i][j];
         if (wv > 0) {
           buckets[wv - 1] := g2_add(buckets[wv - 1], points[i]);
@@ -1138,7 +1137,7 @@ module {
     var w = numWindows - 1;
     while (w > 0) {
       w -= 1;
-      for (_ in Iter.range(0, c - 1)) {
+      for (_ in Nat.rangeInclusive(0, c - 1)) {
         total := g2_double(total);
       };
       total := g2_add(total, windowResults[w]);
@@ -1269,7 +1268,7 @@ module {
   func eval_poly_fp(coeffs : [Nat], x : Nat) : Nat {
     var result : Nat = 0;
     var xpow : Nat = 1;
-    for (i in Iter.range(0, coeffs.size() - 1)) {
+    for (i in Nat.rangeInclusive(0, coeffs.size() - 1)) {
       result := fp_add(result, fp_mul(coeffs[i], xpow));
       xpow := fp_mul(xpow, x);
     };
@@ -1442,11 +1441,11 @@ module {
   // Read a 64-byte big-endian Fp element (16 zero padding + 48 data)
   public func decode_fp(input : [Nat8], offset : Nat) : ?Nat {
     if (offset + 64 > input.size()) return null;
-    for (i in Iter.range(0, 15)) {
+    for (i in Nat.rangeInclusive(0, 15)) {
       if (input[offset + i] != 0) return null;
     };
     var result : Nat = 0;
-    for (i in Iter.range(16, 63)) {
+    for (i in Nat.rangeInclusive(16, 63)) {
       result := result * 256 + Nat8.toNat(input[offset + i]);
     };
     if (result >= P) return null;
@@ -1463,9 +1462,7 @@ module {
   // Encode Fp to 64 bytes
   public func encode_fp(value : Nat) : [Nat8] {
     let v = fp_mod(value);
-    let buf = Buffer.Buffer<Nat8>(64);
-    for (_ in Iter.range(0, 15)) { buf.add(0) };
-    let bytes = Array.init<Nat8>(48, 0);
+    let bytes = VarArray.repeat<Nat8>(0, 48);
     var n = v;
     var idx : Nat = 47;
     while (n > 0) {
@@ -1473,17 +1470,15 @@ module {
       n := n / 256;
       if (idx > 0) { idx -= 1 } else { n := 0 };
     };
-    for (b in bytes.vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.tabulate<Nat8>(64, func(i : Nat) : Nat8 {
+      if (i < 16) 0 else bytes[i - 16]
+    });
   };
 
   public func encode_fp2(value : Fp2) : [Nat8] {
     let c0 = encode_fp(value.0);
     let c1 = encode_fp(value.1);
-    let buf = Buffer.Buffer<Nat8>(128);
-    for (b in c0.vals()) { buf.add(b) };
-    for (b in c1.vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(c0, c1);
   };
 
   // Decode G1 point - curve check only (for G1ADD/G2ADD which don't need subgroup check)
@@ -1528,7 +1523,7 @@ module {
 
   public func decode_scalar(input : [Nat8], offset : Nat) : Nat {
     var result : Nat = 0;
-    for (i in Iter.range(0, 31)) {
+    for (i in Nat.rangeInclusive(0, 31)) {
       if (offset + i < input.size()) {
         result := result * 256 + Nat8.toNat(input[offset + i]);
       };
@@ -1539,19 +1534,13 @@ module {
   public func encode_g1(p : G1Point) : [Nat8] {
     if (g1_is_inf(p)) return Array.tabulate<Nat8>(128, func(_ : Nat) : Nat8 { 0 });
     let (ax, ay) = g1_to_affine(p);
-    let buf = Buffer.Buffer<Nat8>(128);
-    for (b in encode_fp(ax).vals()) { buf.add(b) };
-    for (b in encode_fp(ay).vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(encode_fp(ax), encode_fp(ay));
   };
 
   public func encode_g2(p : G2Point) : [Nat8] {
     if (g2_is_inf(p)) return Array.tabulate<Nat8>(256, func(_ : Nat) : Nat8 { 0 });
     let (ax, ay) = g2_to_affine(p);
-    let buf = Buffer.Buffer<Nat8>(256);
-    for (b in encode_fp2(ax).vals()) { buf.add(b) };
-    for (b in encode_fp2(ay).vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(encode_fp2(ax), encode_fp2(ay));
   };
 
   // ══════════════════════════════════════════════════════════════
