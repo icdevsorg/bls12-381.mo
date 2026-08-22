@@ -1,8 +1,9 @@
 // BLS12-381 test canister: exposes individual BLS operations for testing
 import BLS "../../src/lib";
-import Array "mo:base/Array";
-import Nat8 "mo:base/Nat8";
-import Buffer "mo:base/Buffer";
+import Array "mo:core/Array";
+import Nat8 "mo:core/Nat8";
+import PureList "mo:core/pure/List";
+import VarArray "mo:core/VarArray";
 
 persistent actor {
 
@@ -21,7 +22,7 @@ persistent actor {
 
   // Encode a Nat as a fixed-length big-endian Nat8 array
   func natToBytes(n : Nat, len : Nat) : [Nat8] {
-    let buf = Array.init<Nat8>(len, 0);
+    let buf = VarArray.repeat<Nat8>(0, len);
     var val = n;
     var idx = len;
     while (val > 0 and idx > 0) {
@@ -29,7 +30,7 @@ persistent actor {
       buf[idx] := Nat8.fromNat(val % 256);
       val := val / 256;
     };
-    Array.freeze(buf);
+    VarArray.toArray(buf);
   };
 
   // Decode a big-endian Fp element (48 bytes)
@@ -99,10 +100,7 @@ persistent actor {
   func encodeFp2(fp2 : BLS.Fp2) : [Nat8] {
     let c0 = fpToBytes(fp2.0);
     let c1 = fpToBytes(fp2.1);
-    let buf = Buffer.Buffer<Nat8>(96);
-    for (b in c0.vals()) { buf.add(b) };
-    for (b in c1.vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(c0, c1);
   };
 
   public query func fp2_add(a : [Nat8], b : [Nat8]) : async [Nat8] {
@@ -219,10 +217,7 @@ persistent actor {
     // Return as two 48-byte values
     let bx = fpToBytes(x);
     let by = fpToBytes(y);
-    let buf = Buffer.Buffer<Nat8>(96);
-    for (b in bx.vals()) { buf.add(b) };
-    for (b in by.vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(bx, by);
   };
 
   // Isogeny map only (without SWU)
@@ -232,10 +227,7 @@ persistent actor {
     let (ox, oy) = BLS.iso11_map(x, y);
     let bx = fpToBytes(ox);
     let by = fpToBytes(oy);
-    let buf = Buffer.Buffer<Nat8>(96);
-    for (b in bx.vals()) { buf.add(b) };
-    for (b in by.vals()) { buf.add(b) };
-    Buffer.toArray(buf);
+    Array.concat(bx, by);
   };
 
   // Evaluate a single polynomial (for debugging coefficient issues)
@@ -253,18 +245,18 @@ persistent actor {
   public query func pairing_check(input : [Nat8]) : async Bool {
     if (input.size() % 384 != 0) return false;
     let numPairs = input.size() / 384;
-    let pairs = Buffer.Buffer<(BLS.G1Point, BLS.G2Point)>(numPairs);
+    var pairs = PureList.empty<(BLS.G1Point, BLS.G2Point)>();
 
     var i = 0;
     while (i < numPairs) {
       let offset = i * 384;
       let ?g1 = BLS.decode_g1(input, offset) else return false;
       let ?g2 = BLS.decode_g2(input, offset + 128) else return false;
-      pairs.add((g1, g2));
+      pairs := PureList.pushFront(pairs, (g1, g2));
       i += 1;
     };
 
-    BLS.pairing_check(Buffer.toArray(pairs));
+    BLS.pairing_check(PureList.toArray(pairs));
   };
 
   // Single pairing: compute e(P, Q) and return Fp12 as serialized bytes
@@ -275,16 +267,13 @@ persistent actor {
     let result = BLS.pairing(p, q);
     // Serialize Fp12 as 12 * 48 = 576 bytes (each Fp2 component = 2*48 bytes)
     // Fp12 = (Fp6, Fp6), Fp6 = (Fp2, Fp2, Fp2)
-    let buf = Buffer.Buffer<Nat8>(576);
     let components : [(Nat, Nat)] = [
       result.0.0, result.0.1, result.0.2,
       result.1.0, result.1.1, result.1.2
     ];
-    for (c in components.vals()) {
-      for (b in fpToBytes(c.0).vals()) { buf.add(b) };
-      for (b in fpToBytes(c.1).vals()) { buf.add(b) };
-    };
-    Buffer.toArray(buf);
+    Array.flatten(Array.map<(Nat, Nat), [Nat8]>(components, func(c) {
+      Array.concat(fpToBytes(c.0), fpToBytes(c.1));
+    }));
   };
 
   // ══════════════════════════════════════════════════════════════
@@ -296,18 +285,18 @@ persistent actor {
     let numScalars = scalars_bytes.size() / 32;
     if (numPoints != numScalars or numPoints == 0) return [];
 
-    let points = Buffer.Buffer<BLS.G1Point>(numPoints);
-    let scalars = Buffer.Buffer<Nat>(numPoints);
+    var points = PureList.empty<BLS.G1Point>();
+    var scalars = PureList.empty<Nat>();
 
     var i = 0;
     while (i < numPoints) {
       let ?p = BLS.decode_g1_curve_only(points_bytes, i * 128) else return [];
-      points.add(p);
-      scalars.add(BLS.decode_scalar(scalars_bytes, i * 32));
+      points := PureList.pushFront(points, p);
+      scalars := PureList.pushFront(scalars, BLS.decode_scalar(scalars_bytes, i * 32));
       i += 1;
     };
 
-    BLS.encode_g1(BLS.g1_msm(Buffer.toArray(points), Buffer.toArray(scalars)));
+    BLS.encode_g1(BLS.g1_msm(PureList.toArray(points), PureList.toArray(scalars)));
   };
 
   public query func g2_msm(points_bytes : [Nat8], scalars_bytes : [Nat8]) : async [Nat8] {
@@ -315,18 +304,18 @@ persistent actor {
     let numScalars = scalars_bytes.size() / 32;
     if (numPoints != numScalars or numPoints == 0) return [];
 
-    let points = Buffer.Buffer<BLS.G2Point>(numPoints);
-    let scalars = Buffer.Buffer<Nat>(numPoints);
+    var points = PureList.empty<BLS.G2Point>();
+    var scalars = PureList.empty<Nat>();
 
     var i = 0;
     while (i < numPoints) {
       let ?p = BLS.decode_g2_curve_only(points_bytes, i * 256) else return [];
-      points.add(p);
-      scalars.add(BLS.decode_scalar(scalars_bytes, i * 32));
+      points := PureList.pushFront(points, p);
+      scalars := PureList.pushFront(scalars, BLS.decode_scalar(scalars_bytes, i * 32));
       i += 1;
     };
 
-    BLS.encode_g2(BLS.g2_msm(Buffer.toArray(points), Buffer.toArray(scalars)));
+    BLS.encode_g2(BLS.g2_msm(PureList.toArray(points), PureList.toArray(scalars)));
   };
 
   // ══════════════════════════════════════════════════════════════

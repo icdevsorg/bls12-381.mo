@@ -19,6 +19,8 @@ import BLS "mo:bls12-381";
 
 The public API is exported by `src/lib.mo`. It includes field-tower arithmetic, G1 and G2 point operations, encoding and decoding, hash-to-curve helpers, multi-scalar multiplication, and pairing checks.
 
+The package targets moc 1.8.2 and uses `mo:core` exclusively; it has no `mo:base` dependency.
+
 ## Verification
 
 ```sh
@@ -29,7 +31,7 @@ npm test -- --runInBand
 mops bench
 ```
 
-The randomized pairing/MSM suite is computationally expensive and should run in release CI with a generous timeout. Saved `.bench/` results are local artifacts and are not published.
+The randomized pairing/MSM suite is computationally expensive and should run in release CI with a generous timeout. Saved `.bench/` results provide the checked-in pre-Core performance baseline.
 
 ## Provenance and licensing
 

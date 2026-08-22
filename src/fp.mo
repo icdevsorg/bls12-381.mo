@@ -7,10 +7,10 @@
 // Montgomery multiplication: mont_mul(aR, bR) = a*b*R mod P
 // This avoids expensive division by P — uses REDC instead.
 
-import Nat64 "mo:base/Nat64";
-import Nat "mo:base/Nat";
+import Nat64 "mo:core/Nat64";
+import Nat "mo:core/Nat";
 import Prim "mo:⛔";
-import Int "mo:base/Int";
+import Int "mo:core/Int";
 
 module {
 

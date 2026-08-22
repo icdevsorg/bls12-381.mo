@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "moc": "1.8.2",
+  "replica": "dfx-pocket-ic",
+  "replicaVersion": "",
+  "gc": "copying",
+  "forceGc": true,
+  "results": [
+    [
+      "multi_miller_loop(2_pairs):1_op",
+      {
+        "rts_stable_memory_size": 0,
+        "stable_memory_size": 0,
+        "instructions": 805279748,
+        "rts_memory_size": 19398656,
+        "rts_total_allocation": 19394384,
+        "rts_collector_instructions": 6292,
+        "rts_mutator_instructions": -10221,
+        "rts_logical_stable_memory_size": 0,
+        "rts_heap_size": 272,
+        "rts_reclaimed": 19394112
+      }
+    ],
+    [
+      "separate_miller_x2:1_op",
+      {
+        "rts_stable_memory_size": 0,
+        "stable_memory_size": 0,
+        "instructions": 1082414436,
+        "rts_memory_size": 6684672,
+        "rts_total_allocation": 26085400,
+        "rts_collector_instructions": 6655,
+        "rts_mutator_instructions": -7856,
+        "rts_logical_stable_memory_size": 0,
+        "rts_heap_size": 308,
+        "rts_reclaimed": 26085092
+      }
+    ]
+  ]
+}

@@ -7,7 +7,6 @@ keywords = [ "bls12-381", "elliptic-curve", "cryptography", "eip-2537", "pairing
 license = "Apache-2.0"
 
 [dependencies]
-base = "0.16.0"
 core = "2.3.1"
 
 [dev-dependencies]

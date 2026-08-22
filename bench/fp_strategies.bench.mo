@@ -1,6 +1,6 @@
 import Bench "mo:bench";
-import Int "mo:base/Int";
-import Nat "mo:base/Nat";
+import Int "mo:core/Int";
+import Nat "mo:core/Nat";
 
 module {
 
