@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Unreleased
+## 0.1.0 — 2026-09-24
 
 - Initial ICDevs release of BLS12-381 field, curve, hash-to-curve, encoding, multi-scalar multiplication, and pairing operations.
 - EIP-2537-compatible test-canister interface.
