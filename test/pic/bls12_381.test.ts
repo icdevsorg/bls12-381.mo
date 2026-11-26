@@ -9,7 +9,7 @@ import { PocketIc, PocketIcServer, type Actor } from '@dfinity/pic';
 import { IDL } from '@dfinity/candid';
 import { Principal } from '@dfinity/principal';
 import { resolve } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { bls12_381 as bls } from '@noble/curves/bls12-381';
 
 import { type _SERVICE } from './declarations/bls_test.did.d';
@@ -749,6 +749,60 @@ describe('BLS12-381', () => {
 
       expect(Array.from(msm_result)).toEqual(Array.from(five_g));
     });
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  //  MSM above 8 points (Pippenger path) with scalars of any width
+  //  Oracles: @noble/curves (computed here) and zkcrypto bls12_381 (vectors file)
+  // ══════════════════════════════════════════════════════════════
+  describe('MSM above 8 points', () => {
+    const R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n;
+    const vectors = JSON.parse(
+      readFileSync(resolve(__dirname, 'vectors', 'msm_wide_scalars.zkcrypto.json'), 'utf8'),
+    ).cases as Array<{ name: string; group: 'G1' | 'G2'; n: number; scalars: string[]; expected: any }>;
+
+    const mulOrZero = (P: any, k: bigint, ZERO: any) => (k % R === 0n ? ZERO : P.multiply(k % R));
+
+    for (const v of vectors) {
+      it(`${v.name} matches noble and zkcrypto`, async () => {
+        const scalars = v.scalars.map((h) => BigInt('0x' + (h === '' ? '0' : h)));
+        if (v.group === 'G1') {
+          const G = bls.G1.ProjectivePoint.BASE;
+          const pts = Array.from({ length: v.n }, (_, i) => G.multiply(BigInt(i + 1)).toAffine());
+          const bytes = pts.flatMap((p) => g1ToEip2537(p.x, p.y));
+          let expect_ = bls.G1.ProjectivePoint.ZERO;
+          scalars.forEach((k, i) => { expect_ = expect_.add(mulOrZero(G.multiply(BigInt(i + 1)), k, bls.G1.ProjectivePoint.ZERO)); });
+          const out = await actor.g1_msm_nat(bytes, scalars);
+          const [x, y] = g1FromEip2537(out);
+          if (v.expected.inf) {
+            expect(expect_.equals(bls.G1.ProjectivePoint.ZERO)).toBe(true);
+            expect([x, y]).toEqual([0n, 0n]);
+          } else {
+            const a = expect_.toAffine();
+            expect([x, y]).toEqual([a.x, a.y]);
+            expect([x, y]).toEqual([BigInt('0x' + v.expected.x), BigInt('0x' + v.expected.y)]);
+          }
+        } else {
+          const G = bls.G2.ProjectivePoint.BASE;
+          const pts = Array.from({ length: v.n }, (_, i) => G.multiply(BigInt(i + 1)).toAffine());
+          const bytes = pts.flatMap((p) => [...fpToEip2537(p.x.c0), ...fpToEip2537(p.x.c1), ...fpToEip2537(p.y.c0), ...fpToEip2537(p.y.c1)]);
+          let expect_ = bls.G2.ProjectivePoint.ZERO;
+          scalars.forEach((k, i) => { expect_ = expect_.add(mulOrZero(G.multiply(BigInt(i + 1)), k, bls.G2.ProjectivePoint.ZERO)); });
+          const out = await actor.g2_msm_nat(bytes, scalars);
+          const [[x0, x1], [y0, y1]] = g2FromEip2537(out);
+          if (v.expected.inf) {
+            expect(expect_.equals(bls.G2.ProjectivePoint.ZERO)).toBe(true);
+            expect([x0, x1, y0, y1]).toEqual([0n, 0n, 0n, 0n]);
+          } else {
+            const a = expect_.toAffine();
+            expect([x0, x1, y0, y1]).toEqual([a.x.c0, a.x.c1, a.y.c0, a.y.c1]);
+            expect([x0, x1, y0, y1]).toEqual(
+              [v.expected.x0, v.expected.x1, v.expected.y0, v.expected.y1].map((h: string) => BigInt('0x' + h)),
+            );
+          }
+        }
+      });
+    }
   });
 
   // ══════════════════════════════════════════════════════════════

@@ -989,6 +989,15 @@ module {
   //  Falls back to naive summation for small k
   // ══════════════════════════════════════════════════════════════
 
+  // Bit length of the widest scalar (0 for all-zero scalars).
+  func scalar_bit_length(scalars : [Nat]) : Nat {
+    var widest : Nat = 0;
+    for (s in scalars.vals()) { if (s > widest) widest := s };
+    var bits : Nat = 0;
+    while (widest > 0) { bits += 1; widest := widest / 2 };
+    bits;
+  };
+
   public func g1_msm(points : [G1Point], scalars : [Nat]) : G1Point {
     let k = points.size();
     if (k == 0) return G1_INF;
@@ -1014,7 +1023,9 @@ module {
     var windowSize : Nat = 1;
     for (_ in Nat.rangeInclusive(0, c - 1)) { windowSize *= 2; };
     let numBuckets : Nat = windowSize - 1;
-    let numWindows : Nat = (256 + c - 1) / c;
+    // One window per c bits of the widest scalar. A fixed 256-bit budget silently dropped the high bits of any
+    // scalar at or above 2^(c * windows), so the result differed from the naive sum and from g1_mul / g2_mul.
+    let numWindows : Nat = Nat.max(1, (scalar_bit_length(scalars) + c - 1) / c);
 
     // Pre-decompose scalars into c-bit windows
     let scalarWindows = Array.tabulate<[var Nat]>(k, func(idx : Nat) : [var Nat] {
@@ -1094,7 +1105,9 @@ module {
     var windowSize : Nat = 1;
     for (_ in Nat.rangeInclusive(0, c - 1)) { windowSize *= 2; };
     let numBuckets : Nat = windowSize - 1;
-    let numWindows : Nat = (256 + c - 1) / c;
+    // One window per c bits of the widest scalar. A fixed 256-bit budget silently dropped the high bits of any
+    // scalar at or above 2^(c * windows), so the result differed from the naive sum and from g1_mul / g2_mul.
+    let numWindows : Nat = Nat.max(1, (scalar_bit_length(scalars) + c - 1) / c);
 
     let scalarWindows = Array.tabulate<[var Nat]>(k, func(idx : Nat) : [var Nat] {
       let w = VarArray.repeat<Nat>(0, numWindows);

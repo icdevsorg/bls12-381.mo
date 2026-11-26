@@ -22,6 +22,7 @@ service : {
   g1_is_on_curve: (point: vec nat8) -> (bool) query;
   g1_msm: (points_bytes: vec nat8, scalars_bytes: vec nat8) ->
    (vec nat8) query;
+  g1_msm_nat: (points_bytes: vec nat8, scalars: vec nat) -> (vec nat8);
   g1_mul: (point: vec nat8, scalar: vec nat8) -> (vec nat8) query;
   g1_neg: (point: vec nat8) -> (vec nat8) query;
   g1_subgroup_check: (point: vec nat8) -> (bool) query;
@@ -29,6 +30,7 @@ service : {
   g2_is_on_curve: (point: vec nat8) -> (bool) query;
   g2_msm: (points_bytes: vec nat8, scalars_bytes: vec nat8) ->
    (vec nat8) query;
+  g2_msm_nat: (points_bytes: vec nat8, scalars: vec nat) -> (vec nat8);
   g2_mul: (point: vec nat8, scalar: vec nat8) -> (vec nat8) query;
   g2_subgroup_check: (point: vec nat8) -> (bool) query;
   get_p: () -> (vec nat8) query;

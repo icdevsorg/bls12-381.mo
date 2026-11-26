@@ -299,6 +299,34 @@ persistent actor {
     BLS.encode_g1(BLS.g1_msm(PureList.toArray(points), PureList.toArray(scalars)));
   };
 
+  // MSM with arbitrary-width scalars, as direct callers of g1_msm / g2_msm pass them (the EIP-2537 entry points
+  // above read 32-byte scalars). Update calls, for the larger per-message instruction limit.
+  public func g1_msm_nat(points_bytes : [Nat8], scalars : [Nat]) : async [Nat8] {
+    let numPoints = points_bytes.size() / 128;
+    if (numPoints != scalars.size() or numPoints == 0) return [];
+    let points = VarArray.repeat<BLS.G1Point>(BLS.G1_INF, numPoints);
+    var i = 0;
+    while (i < numPoints) {
+      let ?p = BLS.decode_g1_curve_only(points_bytes, i * 128) else return [];
+      points[i] := p;
+      i += 1;
+    };
+    BLS.encode_g1(BLS.g1_msm(VarArray.toArray(points), scalars));
+  };
+
+  public func g2_msm_nat(points_bytes : [Nat8], scalars : [Nat]) : async [Nat8] {
+    let numPoints = points_bytes.size() / 256;
+    if (numPoints != scalars.size() or numPoints == 0) return [];
+    let points = VarArray.repeat<BLS.G2Point>(BLS.G2_INF, numPoints);
+    var i = 0;
+    while (i < numPoints) {
+      let ?p = BLS.decode_g2_curve_only(points_bytes, i * 256) else return [];
+      points[i] := p;
+      i += 1;
+    };
+    BLS.encode_g2(BLS.g2_msm(VarArray.toArray(points), scalars));
+  };
+
   public query func g2_msm(points_bytes : [Nat8], scalars_bytes : [Nat8]) : async [Nat8] {
     let numPoints = points_bytes.size() / 256;
     let numScalars = scalars_bytes.size() / 32;
